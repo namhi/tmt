@@ -14,6 +14,7 @@ dependencies:
   very_good_cli:
   code_builder:
   built_collection:
+  dart_style: ^2.2.5
   tmt_dart_utils:
     git:
       path: packages/tmt_dart_utils
