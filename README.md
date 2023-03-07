@@ -17,6 +17,11 @@ Or locally via:
 dart pub global activate --source=path <path to this package>
 ```
 
+or git via:
+```sh
+dart pub global activate  --source git https://github.com/namhi/tmt.git --git-ref=master
+
+```
 ## Usage
 
 ```sh
