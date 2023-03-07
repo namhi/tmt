@@ -21,10 +21,10 @@ dart pub global activate --source=path <path to this package>
 
 ```sh
 # Sample command
-$ tmt create
+$ tmt create bloc
 
 # Sample command option
-$ tmt create my_bloc
+$ tmt create bloc my_bloc
 
 # Show CLI version
 $ tmt --version
