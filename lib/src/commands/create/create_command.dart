@@ -2,7 +2,8 @@ import 'dart:io';
 
 import 'package:args/command_runner.dart';
 import 'package:mason_logger/mason_logger.dart';
-import 'package:tmt/src/commands/create/bloc_command.dart';
+import 'package:tmt/src/commands/create/bloc/bloc_command.dart';
+import 'package:tmt/src/commands/create/riverpod/riverpod_create_command.dart';
 
 /// {@template sample_command}
 ///
@@ -15,6 +16,7 @@ class CreateCommand extends Command<int> {
     required Logger logger,
   }) : _logger = logger {
     addSubcommand(BlocCommand(logger: logger));
+    addSubcommand(RiverpodCreateCommand(logger: logger));
   }
 
   @override

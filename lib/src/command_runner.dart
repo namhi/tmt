@@ -43,7 +43,6 @@ class TmtFlutterCliCommandRunner extends CompletionCommandRunner<int> {
     // Add sub commands
     addCommand(CommonCommand(logger: _logger));
     addCommand(UpdateCommand(logger: _logger, pubUpdater: _pubUpdater));
-    addCommand(RiverPodCommand(logger: _logger));
     addCommand(CreateCommand(logger: _logger));
   }
 
