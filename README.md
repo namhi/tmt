@@ -31,6 +31,10 @@ $ tmt create bloc
 # Sample command option
 $ tmt create bloc my_bloc
 
+# Command create bloc template with --force flag and dependencies
+
+$ tmt create bloc customers --dependencies=customer_repository,receiver_repository,log_service --force
+
 # Show CLI version
 $ tmt --version
 

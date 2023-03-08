@@ -18,12 +18,24 @@ class BlocCommand extends Command<int> {
   BlocCommand({
     required Logger logger,
   }) : _logger = logger {
-    argParser.addOption(
-      'name',
-      abbr: 'n',
-      help: 'bloc name example "product_list"',
-      aliases: ['n'],
-    );
+    argParser
+      ..addOption(
+        'name',
+        abbr: 'n',
+        help: 'Assign name of bloc, example "product_list"',
+        aliases: ['n'],
+      )
+      ..addFlag(
+        'force',
+        abbr: 'f',
+        help: 'force overwrite file if true',
+        aliases: ['f'],
+      )
+      ..addOption(
+        'dependencies',
+        help: 'Bloc dependencies, example "ProductRepository,LogService',
+        aliases: ['dependencies'],
+      );
   }
 
   @override
@@ -37,219 +49,383 @@ class BlocCommand extends Command<int> {
 
   @override
   Future<int> run() async {
-    var providerName = argResults?.rest.firstOrNull?.toLowerCase();
+    var providerName = argResults?.rest.firstOrNull;
+    final forceOverwrite = (argResults?['force'] as bool?) ?? false;
+    final dependencies = _getDependencies(
+      (argResults?['dependencies'] as String?) ?? '',
+    );
 
     if (providerName == null) {
       _logger.info('Enter name of bloc:');
       providerName = stdin.readLineSync();
     }
-    final classSuffix =
-        providerName!.split('_').map((e) => e.capitalize()).join();
+
+    /// Lower under score convention
+    final blocFileName = providerName!.toLowerUnderscore();
+
+    /// Upper camel case convention
+    final classNameSuffix = providerName.toUpperCamelCase();
+
     final currentDirectory = Directory.current;
     final directoryPath = currentDirectory.path;
     //await _createDirectoryIfNotExists(providerName, currentDirectory.path);
     // Create freezed state
-    await _createStateFile(providerName, classSuffix, directoryPath);
-    await _createEventFile(providerName, classSuffix, directoryPath);
-    await _createNotificationFile(providerName, classSuffix, directoryPath);
-    await _createBlocFile(providerName, classSuffix, directoryPath);
-
-    return ExitCode.success.code;
-
-    _logger.info('output');
-    return ExitCode.success.code;
-  }
-
-  Future<void> _createStateFile(
-      String fileNameSuffix, String classSuffix, String directory) async {
-    final fileName = '$directory/${fileNameSuffix}_state.dart';
-    final className = '${classSuffix}State';
-    final file = await _createFileIfNotExists(fileName);
-
-    // Create content
-
-    final stateClass = Class(
-      (p) => p
-        ..name = className
-        ..mixins = (ListBuilder<Reference>()
-          ..add(
-            Reference('_\$$className'),
-          ))
-        ..annotations =
-            (ListBuilder<Expression>()..add(const Reference('Freezed()')))
-        ..constructors = [
-          Constructor(
-            (p0) => p0
-              ..constant = true
-              ..factory = true
-              ..redirect = Reference('_${classSuffix}State')
-              ..optionalParameters = [
-                Parameter(
-                  (p1) => p1
-                    ..name = 'notification'
-                    ..type = refer('${classSuffix}Notification?')
-                    ..named = true,
-                ),
-                Parameter(
-                  (p1) => p1
-                    ..name = 'uiStatus'
-                    ..type = refer('UIStatus')
-                    ..named = true
-                    ..annotations = [
-                      const Reference('Default(UIStatus.initial)'),
-                    ].build().toBuilder(),
-                )
-              ].build().toBuilder(),
-          ),
-        ].build().toBuilder(),
+    await _createStateFile(
+      fileNameSuffix: blocFileName,
+      classNameSuffix: classNameSuffix,
+      directory: directoryPath,
+      forceOverwrite: forceOverwrite,
+    );
+    await _createEventFile(
+      fileNameSuffix: blocFileName,
+      classNameSuffix: classNameSuffix,
+      directory: directoryPath,
+      forceOverwrite: forceOverwrite,
+    );
+    await _createNotificationFile(
+      fileNameSuffix: blocFileName,
+      classNameSuffix: classNameSuffix,
+      directory: directoryPath,
+      forceOverwrite: forceOverwrite,
+    );
+    await _createBlocFile(
+      fileNameSuffix: blocFileName,
+      classNameSuffix: classNameSuffix,
+      directory: directoryPath,
+      forceOverwrite: forceOverwrite,
+      dependencies: dependencies,
     );
 
-    final emitter = DartEmitter.scoped();
-    final content = DartFormatter().format('${stateClass.accept(emitter)}');
-    final ioSink = file.openWrite()
-      ..writeln("part of '${fileNameSuffix}_bloc.dart';")
-      ..writeln(content);
-
-    await ioSink.close();
+    return ExitCode.success.code;
   }
 
-  Future<void> _createEventFile(
-      String fileSuffix, String classNameSuffix, String directory) async {
-    final className = '${classNameSuffix}Event';
-    final fileName = '$directory/${fileSuffix}_event.dart';
-    final file = await _createFileIfNotExists(fileName);
-    final ioSink = file.openWrite();
+  Future<void> _createStateFile({
+    required String fileNameSuffix,
+    required String classNameSuffix,
+    required String directory,
+    required bool forceOverwrite,
+  }) async {
+    final fileName = '$directory/${fileNameSuffix}_state.dart';
+    final className = '${classNameSuffix}State';
+    final isFileExist = await _isFileExists(fileName);
 
-    var template = r'''
+    /// Nếu file chưa tồn tại hoặc yêu cầu ghi đè
+    if (!isFileExist || forceOverwrite) {
+      final file = await _createFile(fileName);
+      // Create content
+
+      final stateClass = Class(
+        (p) => p
+          ..name = className
+          ..mixins = (ListBuilder<Reference>()
+            ..add(
+              Reference('_\$$className'),
+            ))
+          ..annotations =
+              (ListBuilder<Expression>()..add(const Reference('Freezed()')))
+          ..constructors = [
+            Constructor(
+              (p0) => p0
+                ..constant = true
+                ..factory = true
+                ..redirect = Reference('_${classNameSuffix}State')
+                ..optionalParameters = [
+                  Parameter(
+                    (p1) => p1
+                      ..name = 'notification'
+                      ..type = refer('${classNameSuffix}Notification?')
+                      ..named = true,
+                  ),
+                  Parameter(
+                    (p1) => p1
+                      ..name = 'uiStatus'
+                      ..type = refer('UIStatus')
+                      ..named = true
+                      ..annotations = [
+                        const Reference('Default(UIStatus.initial)'),
+                      ].build().toBuilder(),
+                  )
+                ].build().toBuilder(),
+            ),
+          ].build().toBuilder(),
+      );
+
+      final emitter = DartEmitter.scoped();
+      final content = DartFormatter().format('${stateClass.accept(emitter)}');
+      final ioSink = file.openWrite()
+        ..writeln("part of '${fileNameSuffix}_bloc.dart';")
+        ..writeln()
+        ..writeln(content);
+
+      await ioSink.close();
+    } else {
+      _logFileExist(fileName);
+      return;
+    }
+  }
+
+  Future<void> _createEventFile({
+    required String fileNameSuffix,
+    required String classNameSuffix,
+    required String directory,
+    required bool forceOverwrite,
+  }) async {
+    final fileName = '$directory/${fileNameSuffix}_event.dart';
+
+    final isFileExist = await _isFileExists(fileName);
+
+    if (!isFileExist || forceOverwrite) {
+      final file = await _createFile(fileName);
+      final ioSink = file.openWrite();
+
+      var template = r'''
  part of '{FileSuffix}_bloc.dart';
- @freezed
+ @Freezed()
     class {BlocName}Event with _${BlocName}Event {
       const factory {BlocName}Event.loaded() = _{BlocName}Loaded;
 }
 
     ''';
 
-    template = template
-        .replaceAll('{BlocName}', classNameSuffix)
-        .replaceAll('{FileSuffix}', fileSuffix);
-    final content = DartFormatter().format(template);
+      template = template
+          .replaceAll('{BlocName}', classNameSuffix)
+          .replaceAll('{FileSuffix}', fileNameSuffix);
+      final content = DartFormatter().format(template);
 
-    ioSink.writeln(content);
-    await ioSink.close();
+      ioSink.writeln(content);
+      await ioSink.close();
+    } else {
+      _logFileExist(fileName);
+      return;
+    }
   }
 
-  Future<void> _createNotificationFile(
-    String fileSuffix,
-    String classNameSuffix,
-    String directory,
-  ) async {
-    final className = '${classNameSuffix}Notification';
-    final fileName = '$directory/${fileSuffix}_notification.dart';
-    final file = await _createFileIfNotExists(fileName);
-    final ioSink = file.openWrite();
+  Future<void> _createNotificationFile({
+    required String fileNameSuffix,
+    required String classNameSuffix,
+    required String directory,
+    required bool forceOverwrite,
+  }) async {
+    final fileName = '$directory/${fileNameSuffix}_notification.dart';
+    final isFileExist = await _isFileExists(fileName);
 
-    var template = r'''
+    if (!isFileExist || forceOverwrite) {
+      final file = await _createFile(fileName);
+      final ioSink = file.openWrite();
+
+      var template = r'''
    
 part of '{FileSuffix}_bloc.dart';
-  @Freezed()
+  @Freezed(equal: false)
   class {BlocName}Notification with _${BlocName}Notification {
-    factory {BlocName}Notification.showNotification(String title, String message) =
-        _ShowNotification;
+        
+    factory {BlocName}Notification.showSuccessNotification({
+    String? title,
+    String? message,
+  }) = _ShowSuccessNotification;
+  
+  factory {BlocName}Notification.showFailureNotification({
+    String? title,
+    String? message,
+  }) = _ShowFailureNotification;
   }
    ''';
 
-    template = template
-        .replaceAll('{FileSuffix}', fileSuffix)
-        .replaceAll('{BlocName}', classNameSuffix);
-    final content = DartFormatter().format(template);
+      template = template
+          .replaceAll('{FileSuffix}', fileNameSuffix)
+          .replaceAll('{BlocName}', classNameSuffix);
+      final content = DartFormatter().format(template);
 
-    ioSink.writeln(content);
-    await ioSink.close();
+      ioSink.writeln(content);
+      await ioSink.close();
+    } else {
+      _logFileExist(fileName);
+      return;
+    }
   }
 
-  Future<void> _createBlocFile(
-    String fileSuffix,
-    String classNameSuffix,
-    String directory,
-  ) async {
-    final className = '${classNameSuffix}Bloc';
-    final fileName = '$directory/${fileSuffix}_bloc.dart';
-    final file = await _createFileIfNotExists(fileName);
-    final ioSink = file.openWrite();
+  Future<void> _createBlocFile({
+    required String fileNameSuffix,
+    required String classNameSuffix,
+    required String directory,
+    required bool forceOverwrite,
+    required List<String> dependencies,
+  }) async {
+    final fileName = '$directory/${fileNameSuffix}_bloc.dart';
 
-    final eventClass = Class(
-      (p0) => p0
-        ..name = className
-        ..abstract = false
-        ..extend =
-            Reference('Bloc<${classNameSuffix}Event, ${classNameSuffix}State>')
-        ..constructors = [
-          Constructor(
-            (p0) => p0
-              ..factory = false
-              ..initializers = [
-                Code('super(const ${classNameSuffix}State())'),
-              ].build().toBuilder()
-              ..body = Code('''
+    final isFileExist = await _isFileExists(fileName);
+
+    if (!isFileExist || forceOverwrite) {
+      final className = '${classNameSuffix}Bloc';
+      final file = await _createFile(fileName);
+      final ioSink = file.openWrite();
+
+      final blocClass = Class(
+        (p0) => p0
+          ..name = className
+          ..abstract = false
+          ..extend = Reference(
+            'Bloc<${classNameSuffix}Event, ${classNameSuffix}State>',
+          )
+          ..constructors = [
+            Constructor(
+              (p0) => p0
+                ..factory = false
+                ..initializers = [
+                  Code('super(const ${classNameSuffix}State())'),
+                ].build().toBuilder()
+                ..optionalParameters = dependencies
+                    .map(
+                      (dependency) => Parameter(
+                        (p0) => p0
+                          ..name = dependency.toCamelCase()
+                          ..type = Reference(dependency.toUpperCamelCase())
+                          ..named = true
+                          ..required = true,
+                      ),
+                    )
+                    .toList()
+                    .build()
+                    .toBuilder()
+                ..body = Block(
+                  (p0) => p0
+                    ..statements = (dependencies
+                            .map(
+                              (dependency) => Code(
+                                '''_${dependency.toCamelCase()} = ${dependency.toCamelCase()};''',
+                              ),
+                            )
+                            .toList()
+                          ..add(
+                            Code('''
               on<_${classNameSuffix}Loaded>(_onLoaded);
                   '''),
-          ),
-        ].build().toBuilder()
-        ..methods.add(
-          Method(
-            (p1) => p1
-              ..name = '_onLoaded'
-              ..returns = const Reference('FutureOr<void>')
-              ..requiredParameters = [
-                Parameter((p0) => p0
-                  ..name = 'event'
-                  ..type = Reference('_${classNameSuffix}Loaded')),
-                Parameter((p0) => p0
-                  ..name = 'emit'
-                  ..type = Reference('Emitter<${classNameSuffix}State>')),
-              ].build().toBuilder()
-              ..body = const Code(' '),
-          ),
+                          ))
+                        .build()
+                        .toBuilder(),
+                ),
+            ),
+          ].build().toBuilder()
+          ..fields = dependencies
+              .map(
+                (dependency) => Field(
+                  (p0) => p0
+                    ..name = '_${dependency.toCamelCase()}'
+                    ..type = Reference(dependency.toUpperCamelCase())
+                    ..modifier = FieldModifier.final$
+                    ..late = true,
+                ),
+              )
+              .toList()
+              .build()
+              .toBuilder()
+          ..methods.add(
+            Method(
+              (p1) => p1
+                ..name = '_onLoaded'
+                ..returns = const Reference('FutureOr<void>')
+                ..modifier = MethodModifier.async
+                ..requiredParameters = [
+                  Parameter(
+                    (p0) => p0
+                      ..name = 'event'
+                      ..type = Reference('_${classNameSuffix}Loaded'),
+                  ),
+                  Parameter(
+                    (p0) => p0
+                      ..name = 'emit'
+                      ..type = Reference('Emitter<${classNameSuffix}State>'),
+                  ),
+                ].build().toBuilder()
+                ..body = const Code('''
+              try {
+      emit(
+        state.copyWith(
+          uiStatus: UIStatus.loading,
         ),
-    );
+      );
 
-    final content =
-        DartFormatter().format('${eventClass.accept(DartEmitter.scoped())}');
+      /// TODO: implement body
+      await Future.delayed(const Duration(seconds: 3));
 
-    ioSink
-      ..writeln("import 'package:freezed_annotation/freezed_annotation.dart';")
-      ..writeln("import 'package:bloc/bloc.dart';")
-      ..writeln("import 'dart:async';")
-      ..writeln("part '${fileSuffix}_event.dart';")
-      ..writeln("part '${fileSuffix}_state.dart';")
-      ..writeln("part '${fileSuffix}_notification.dart';")
-      ..writeln("part '${fileSuffix}_bloc.freezed.dart';")
-      ..writeln(content);
-    await ioSink.close();
+      emit(
+        state.copyWith(
+          uiStatus: UIStatus.loadSuccess,
+        ),
+      );
+    } catch (e, s) {
+      /// TODO: log exception
+      emit(
+        state.copyWith(
+          uiStatus: UIStatus.loadFailure,
+        ),
+      );
+    }
+              '''),
+            ),
+          ),
+      );
+
+      final content = DartFormatter().format(
+        '${blocClass.accept(DartEmitter.scoped(useNullSafetySyntax: true))}',
+      );
+
+      ioSink
+        ..writeln(
+          "import 'package:freezed_annotation/freezed_annotation.dart';",
+        )
+        ..writeln("import 'package:flutter_bloc/flutter_bloc.dart';")
+        ..writeln("import 'dart:async';")
+        ..writeln()
+        ..writeln("part '${fileNameSuffix}_event.dart';")
+        ..writeln("part '${fileNameSuffix}_state.dart';")
+        ..writeln("part '${fileNameSuffix}_notification.dart';")
+        ..writeln("part '${fileNameSuffix}_bloc.freezed.dart';")
+        ..writeln()
+        ..writeln(content);
+      await ioSink.close();
+    } else {
+      _logFileExist(fileName);
+      return;
+    }
   }
 
-  Future<File> _createFileIfNotExists(String fileName) async {
+  Future<File> _createFile(String fileName) async {
     final file = File(fileName);
     final isFileExists = file.existsSync();
     if (isFileExists == false) {
       // Create file
       await file.create();
-      _logger.info('File $fileName created');
+      _logger.success('File $fileName created');
     } else {
-      _logger.info('File $fileName existed');
+      _logger.info('File $fileName overwrote');
     }
 
     return file;
   }
 
-  Future<void> _createDirectoryIfNotExists(
-      String path, String parentPath) async {
-    final directory = Directory('$parentPath/$path');
-    if (!directory.existsSync()) {
-      await directory.create();
-      _logger.info('Create directory : $path');
-    } else {
-      _logger.info('Directory $path is already exists');
-    }
+  void _logFileExist(String fileName) {
+    _logger.warn(
+      '''File $fileName existed, add flag --force to overwrite this file''',
+    );
   }
+
+  Future<bool> _isFileExists(String fileName) async {
+    final file = File(fileName);
+    final isFileExists = file.existsSync();
+    return isFileExists;
+  }
+
+  List<String> _getDependencies(String text) {
+    final words = text.split(',');
+    final dependencies = <String>[];
+    for (final w in words) {
+      if (w.isNotEmpty) {
+        dependencies.add(w.toLowerUnderscore());
+      }
+    }
+
+    return dependencies;
+  }
+
 }
