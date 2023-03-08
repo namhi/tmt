@@ -4,16 +4,16 @@ import 'dart:io';
 import 'package:args/command_runner.dart';
 import 'package:built_collection/built_collection.dart';
 import 'package:code_builder/code_builder.dart';
+import 'package:collection/collection.dart';
 import 'package:dart_style/dart_style.dart';
 import 'package:mason_logger/mason_logger.dart';
 import 'package:tmt_dart_utils/tmt_dart_extensions.dart';
-import 'package:collection/collection.dart';
 
 class RiverpodCreateCommand extends Command<int> {
   /// {@macro sample_command}
   RiverpodCreateCommand({
     required Logger logger,
-  }) : _logger = logger {}
+  }) : _logger = logger;
 
   final Logger _logger;
 
@@ -54,7 +54,10 @@ class RiverpodCreateCommand extends Command<int> {
   }
 
   Future<void> _createStateFile(
-      String fileNameSuffix, String classSuffix, String directory) async {
+    String fileNameSuffix,
+    String classSuffix,
+    String directory,
+  ) async {
     final fileName = '$directory/${fileNameSuffix}_state.dart';
     final className = '${classSuffix}State';
     final file = await _createFileIfNotExists(fileName);
@@ -107,7 +110,10 @@ class RiverpodCreateCommand extends Command<int> {
   }
 
   Future<void> _createEventFile(
-      String fileSuffix, String classNameSuffix, String directory) async {
+    String fileSuffix,
+    String classNameSuffix,
+    String directory,
+  ) async {
     final className = '${classNameSuffix}Event';
     final fileName = '$directory/${fileSuffix}_event.dart';
     final file = await _createFileIfNotExists(fileName);
@@ -118,9 +124,11 @@ class RiverpodCreateCommand extends Command<int> {
         ..name = className
         ..abstract = true
         ..methods.add(
-          Method((p0) => p0
-            ..name = 'onLoaded'
-            ..returns = const Reference('void')),
+          Method(
+            (p0) => p0
+              ..name = 'onLoaded'
+              ..returns = const Reference('void'),
+          ),
         ),
     );
 
@@ -148,9 +156,11 @@ class RiverpodCreateCommand extends Command<int> {
         ..name = className
         ..abstract = true
         ..methods.add(
-          Method((p0) => p0
-            ..name = 'onLoaded'
-            ..returns = Reference('void')),
+          Method(
+            (p0) => p0
+              ..name = 'onLoaded'
+              ..returns = const Reference('void'),
+          ),
         ),
     );
 
@@ -178,7 +188,8 @@ class RiverpodCreateCommand extends Command<int> {
         ..name = className
         ..abstract = false
         ..extend = Reference(
-            'StateZ<${classNameSuffix}State, ${classNameSuffix}Notification>')
+          'StateZ<${classNameSuffix}State, ${classNameSuffix}Notification>',
+        )
         ..implements = [
           Reference('${classNameSuffix}Event'),
         ].build().toBuilder()
@@ -222,7 +233,9 @@ class RiverpodCreateCommand extends Command<int> {
   }
 
   Future<void> _createDirectoryIfNotExists(
-      String path, String parentPath) async {
+    String path,
+    String parentPath,
+  ) async {
     final directory = Directory('$parentPath/$path');
     if (!directory.existsSync()) {
       await directory.create();

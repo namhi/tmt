@@ -3,10 +3,9 @@ import 'package:args/command_runner.dart';
 import 'package:cli_completion/cli_completion.dart';
 import 'package:mason_logger/mason_logger.dart';
 import 'package:pub_updater/pub_updater.dart';
+import 'package:tmt/src/commands/commands.dart';
 import 'package:tmt/src/commands/create/create_command.dart';
 import 'package:tmt/src/version.dart';
-
-import 'commands/commands.dart';
 
 const executableName = 'tmt';
 const packageName = 'tmt';
