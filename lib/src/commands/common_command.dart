@@ -31,7 +31,8 @@ class CommonCommand extends Command<int> {
 
   @override
   Future<int> run() async {
-    final deleteConflictingOutput = (argResults?['force'] as bool?) ?? false;
+    final deleteConflictingOutput =
+        (argResults?['delete-conflicting-outputs'] as bool?) ?? false;
     await Shell().run('fvm flutter pub get');
     final buildFlag = deleteConflictingOutput ? '-d' : '';
     await Shell().run('fvm flutter pub run build_runner build $buildFlag');
