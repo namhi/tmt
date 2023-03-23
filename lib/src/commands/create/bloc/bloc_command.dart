@@ -138,11 +138,11 @@ class BlocCommand extends Command<int> {
                   ),
                   Parameter(
                     (p1) => p1
-                      ..name = 'uiStatus'
-                      ..type = refer('UIStatus')
+                      ..name = 'loadingStatus'
+                      ..type = refer('LoadingStatus')
                       ..named = true
                       ..annotations = [
-                        const Reference('Default(UIStatus.initial)'),
+                        const Reference('Default(LoadingStatus.initial())'),
                       ].build().toBuilder(),
                   )
                 ].build().toBuilder(),
