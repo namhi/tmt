@@ -13,10 +13,10 @@ class CommonCommand extends Command<int> {
     required Logger logger,
   }) : _logger = logger {
     argParser.addFlag(
-      'build',
-      abbr: 'b',
-      help: 'Prints the same joke, but in cyan',
-      negatable: false,
+      'delete-conflicting-outputs',
+      abbr: 'd',
+      help: 'call --delete-conflicting-outputs in build',
+      aliases: ['d'],
     );
   }
 
@@ -31,8 +31,10 @@ class CommonCommand extends Command<int> {
 
   @override
   Future<int> run() async {
+    final deleteConflictingOutput = (argResults?['force'] as bool?) ?? false;
     await Shell().run('fvm flutter pub get');
-    await Shell().run('fvm flutter pub run build_runner build -d');
+    final buildFlag = deleteConflictingOutput ? '-d' : '';
+    await Shell().run('fvm flutter pub run build_runner build $buildFlag');
     _logger.info('output');
     return ExitCode.success.code;
   }
