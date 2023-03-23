@@ -341,7 +341,7 @@ part of '{FileSuffix}_bloc.dart';
               try {
       emit(
         state.copyWith(
-          uiStatus: UIStatus.loading,
+          loadingStatus: LoadingStatus.loading(),
         ),
       );
 
@@ -350,14 +350,14 @@ part of '{FileSuffix}_bloc.dart';
 
       emit(
         state.copyWith(
-          uiStatus: UIStatus.loadSuccess,
+          loadingStatus: LoadingStatus.loadSuccess(),
         ),
       );
     } catch (e, s) {
       /// TODO: log exception
       emit(
         state.copyWith(
-          uiStatus: UIStatus.loadFailure,
+          loadingStatus: LoadingStatus.loadFailure(),
         ),
       );
     }
