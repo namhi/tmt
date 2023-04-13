@@ -11,7 +11,7 @@ dependencies:
   cli_completion: ^0.2.0
   mason_logger: ^0.2.4
   pub_updater: ^0.2.4
-  very_good_cli: ^0.12.2
+  very_good_cli: ^0.13.1
   code_builder: ^4.4.0
   collection: ^1.17.1
   built_collection:
